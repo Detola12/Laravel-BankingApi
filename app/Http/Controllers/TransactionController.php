@@ -17,9 +17,24 @@ class TransactionController extends Controller
 {
     use HttpResponses;
 
-    public function showTransactions(){
-        $transactions = DB::table('transactions')->orderBy('created_at', 'desc')->get();
-        return $this->success($transactions, '');
+    public function showTransactions(Request $request){
+        $data = $request->validate([
+            'sort' => 'in:asc,desc',
+            'type' => 'nullable|string|in:WITHDRAW,DEPOSIT,TRANSFER',
+            'pageSize' => 'integer:min:1',
+            'page' => 'integer:min:1'
+        ]);
+        $sort = $data['sort'] ?? 'desc';
+        $type = $data['type'] ?? null;
+        $pageSize = $data['pageSize'] ?? 5;
+
+        $query = DB::table('transactions')->orderBy('created_at', $sort);
+        if($type){
+            $query->where('transactionType',$type);
+        }
+
+        $transactions = $query->paginate($pageSize);
+        return $this->success($transactions, 'Transactions Retrieved Successfully');
     }
 
     public function deposit(DepositRequest $request)
